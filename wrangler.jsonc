@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "actrezz",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-09-16",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": false,
+  "routes": [
+    { "pattern": "actrezz.online", "custom_domain": true },
+    { "pattern": "www.actrezz.online", "custom_domain": true }
+  ],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "actrezz" }],
+  "r2_buckets": [{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "actrezz-next-cache" }],
+  "send_email": [{ "name": "DMCA_EMAIL" }],
+  "durable_objects": { "bindings": [
+    { "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" },
+    { "name": "NEXT_TAG_CACHE_DO_SHARDED", "class_name": "DOShardedTagCache" }
+  ] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DOQueueHandler", "DOShardedTagCache"] }],
+  "vars": { "SITE_INDEXING_ENABLED": "true" },
+  "observability": { "enabled": true, "head_sampling_rate": 0.1 }
+}

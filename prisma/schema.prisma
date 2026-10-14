@@ -1,0 +1,214 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum WorkType {
+  MOVIE
+  TV_SHOW
+}
+
+enum VideoStatus {
+  DRAFT
+  PROCESSING
+  READY
+  FAILED
+  HIDDEN
+}
+
+enum ImportStatus {
+  QUEUED
+  RUNNING
+  COMPLETE
+  FAILED
+}
+
+model Actress {
+  id             String         @id @default(cuid())
+  name           String
+  slug           String         @unique
+  sortName       String
+  initial        String         @db.VarChar(1)
+  profileImage   String?
+  biography      String?        @db.Text
+  seoTitle       String?
+  seoDescription String?        @db.Text
+  rank           Int?
+  videoCount     Int            @default(0)
+  isPublished    Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  videos         VideoActress[]
+
+  @@index([isPublished, sortName, id])
+  @@index([isPublished, rank, id])
+  @@index([initial, sortName, id])
+}
+
+model Work {
+  id             String   @id @default(cuid())
+  title          String
+  slug           String
+  sortTitle      String
+  initial        String   @db.VarChar(1)
+  type           WorkType
+  releaseYear    Int?
+  description    String?  @db.Text
+  posterImage    String?
+  seoTitle       String?
+  seoDescription String?  @db.Text
+  videoCount     Int      @default(0)
+  isPublished    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  videos         Video[]
+
+  @@unique([type, slug])
+  @@index([isPublished, type, sortTitle, id])
+  @@index([isPublished, type, releaseYear, id])
+  @@index([type, initial, sortTitle, id])
+}
+
+model Video {
+  id              String                   @id @default(cuid())
+  title           String
+  slug            String                   @unique
+  description     String?                  @db.Text
+  durationSeconds Int?
+  year            Int?
+  seasonNumber    Int?
+  episodeNumber   Int?
+  r2VideoKey      String?                  @unique
+  r2ThumbnailKey  String?
+  videoUrl        String?                  @db.Text
+  thumbnailUrl    String?                  @db.Text
+  seoTitle        String?
+  seoDescription  String?                  @db.Text
+  seoKeywords     Json?
+  searchVector    Unsupported("tsvector")? @map("search_vector")
+  status          VideoStatus              @default(DRAFT)
+  mediaReady      Boolean                  @default(false)
+  mediaCheckedAt  DateTime?
+  isShort         Boolean                  @default(false)
+  viewCount       BigInt                   @default(0)
+  publishedAt     DateTime?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  workId          String?
+  work            Work?                    @relation(fields: [workId], references: [id], onDelete: SetNull)
+  actresses       VideoActress[]
+  tags            VideoTag[]
+  sources         VideoSource[]
+
+  @@index([status, isShort, publishedAt, id])
+  @@index([status, workId, publishedAt, id])
+  @@index([status, year, publishedAt, id])
+  @@index([status, viewCount, id])
+}
+
+model VideoActress {
+  videoId   String
+  actressId String
+  sortOrder Int     @default(0)
+  video     Video   @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  actress   Actress @relation(fields: [actressId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, actressId])
+  @@index([actressId, videoId])
+}
+
+model Tag {
+  id             String     @id @default(cuid())
+  name           String
+  slug           String     @unique
+  seoTitle       String?
+  seoDescription String?    @db.Text
+  videoCount     Int        @default(0)
+  videos         VideoTag[]
+
+  @@index([videoCount, name, id])
+}
+
+model VideoTag {
+  videoId String
+  tagId   String
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, tagId])
+  @@index([tagId, videoId])
+}
+
+model VideoSource {
+  id             String   @id @default(cuid())
+  videoId        String
+  provider       String
+  sourcePageUrl  String?  @db.Text
+  sourceMediaUrl String?  @db.Text
+  importedAt     DateTime @default(now())
+  video          Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, provider])
+  @@index([provider, importedAt])
+}
+
+model YearStat {
+  year       Int      @id
+  videoCount Int      @default(0)
+  updatedAt  DateTime @updatedAt
+}
+
+model CatalogStats {
+  id            String   @id @default("primary")
+  videoCount    Int      @default(0)
+  actressCount  Int      @default(0)
+  movieCount    Int      @default(0)
+  tvSeriesCount Int      @default(0)
+  tagCount      Int      @default(0)
+  updatedAt     DateTime @updatedAt
+}
+
+model ImportJob {
+  id          String       @id @default(cuid())
+  kind        String
+  status      ImportStatus @default(QUEUED)
+  totalItems  Int          @default(0)
+  doneItems   Int          @default(0)
+  failedItems Int          @default(0)
+  error       String?      @db.Text
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  createdAt   DateTime     @default(now())
+
+  @@index([status, createdAt])
+}
+
+model DmcaRequest {
+  id                  String   @id @default(cuid())
+  claimantName        String
+  organization        String?
+  claimantEmail       String
+  telephone           String
+  mailingAddress      String   @db.Text
+  rightsHolder        String
+  copyrightedWork     String   @db.Text
+  materialUrls        String   @db.Text
+  additionalDetails   String?  @db.Text
+  signature           String
+  status              String   @default("NEW")
+  emailDeliveryStatus String   @default("PENDING")
+  emailMessageId      String?
+  ipHash              String?
+  userAgent           String?  @db.Text
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([ipHash, createdAt])
+}

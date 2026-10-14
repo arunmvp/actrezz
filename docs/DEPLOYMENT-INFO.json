@@ -1,0 +1,17 @@
+{
+  "siteUrl": "https://actrezz.online",
+  "workersDevUrl": "https://actrezz.actrexxxx.workers.dev",
+  "mediaUrl": "https://media.actrezz.online",
+  "mediaEnabled": true,
+  "indexingEnabled": true,
+  "customDomainConnected": true,
+  "zone": {
+    "id": "20fdb1b0214537adbd2ffec5b410a3e5",
+    "name": "actrezz.online",
+    "status": "active",
+    "nameServers": [
+      "adam.ns.cloudflare.com",
+      "olivia.ns.cloudflare.com"
+    ]
+  }
+}
